@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>📦 Sandbox Mode with Stacking Gravity & Ragdolls</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #fafafa;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    margin-bottom: 15px;
+  }
+
+  #sandbox {
+    width: 900px;
+    height: 600px;
+    background-color: #e3e3e3;
+    border: 3px dashed #999;
+    position: relative;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  #palette {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    max-width: 920px;
+  }
+
+  .palette-item {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.3rem;
+    color: white;
+    user-select: none;
+  }
+
+  /* Colors */
+  .blue { background-color: #3a86ff; }
+  .red { background-color: #ff595e; }
+  .green { background-color: #1982c4; }
+  .yellow { background-color: #ffca3a; color: black; }
+  .purple { background-color: #6a4c93; }
+  .teal { background-color: #008080; }
+  .orange { background-color: #fb8500; }
+  .pink { background-color: #d45087; }
+  .gray { background-color: #777; }
+
+  /* Shapes */
+  .circle {
+    border-radius: 50%;
+  }
+  .rectangle {
+    width: 90px;
+    height: 50px;
+    border-radius: 6px;
+  }
+  .square {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+  }
+
+  /* Special smaller circle for ragdoll head */
+  .head {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+
+  label {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    user-select: none;
+  }
+
+  button {
+    padding: 6px 12px;
+    font-size: 1rem;
+    margin-left: 10px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>📦 Sandbox Mode with Stacking Gravity & Ragdolls</h1>
+
+<label><input type="checkbox" id="gravityToggle" checked /> Enable Gravity (fall to floor & stack)</label>
+<button id="clearSandbox">Clear Sandbox</button>
+
+<div id="sandbox"></div>
+
+<div id="palette">
+  <!-- Blocks -->
+  <div class="palette-item blue square" draggable="true" data-type="block" data-shape="square" data-color="#3a86ff">B</div>
+  <div class="palette-item red circle" draggable="true" data-type="block" data-shape="circle" data-color="#ff595e">R</div>
+  <div class="palette-item green rectangle" draggable="true" data-type="block" data-shape="rectangle" data-color="#1982c4">G</div>
+  <div class="palette-item yellow circle" draggable="true" data-type="block" data-shape="circle" data-color="#ffca3a">Y</div>
+  <div class="palette-item purple rectangle" draggable="true" data-type="block" data-shape="rectangle" data-color="#6a4c93">P</div>
+  <div class="palette-item teal rectangle" draggable="true" data-type="block" data-shape="rectangle" data-color="#008080">T</div>
+  <div class="palette-item orange square" draggable="true" data-type="block" data-shape="square" data-color="#fb8500">O</div>
+  <div class="palette-item pink circle" draggable="true" data-type="block" data-shape="circle" data-color="#d45087">Pi</div>
+  <div class="palette-item gray rectangle" draggable="true" data-type="block" data-shape="rectangle" data-color="#777">Gr</div>
+
+  <!-- Ragdoll -->
+  <div class="palette-item gray square" draggable="true" data-type="ragdoll" style="font-size:1.1rem; color:#222;">Ragdoll</div>
+</div>
+
+<!-- Matter.js -->
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+
+<script>
+  // ==== Matter.js module aliases ====
+  const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Mouse, MouseConstraint } = Matter;
+
+  // Create engine and world
+  const engine = Engine.create();
+  const world = engine.world;
+
+  // Create renderer inside #sandbox div
+  const sandbox = document.getElementById('sandbox');
+  const render = Render.create({
+    element: sandbox,
+    engine: engine,
+    options: {
+      width: sandbox.clientWidth,
+      height: sandbox.clientHeight,
+      wireframes: false,
+      background: '#e3e3e3',
+    }
+  });
+  Render.run(render);
+
+  // Create runner
+  const runner = Runner.create();
+  Runner.run(runner, engine);
+
+  // Ground - invisible floor for blocks to land on
+  const ground = Bodies.rectangle(sandbox.clientWidth / 2, sandbox.clientHeight + 25, sandbox.clientWidth, 50, {
+    isStatic: true,
+    render: { visible: false }
+  });
+  World.add(world, ground);
+
+  // Track all created bodies for clearing
+  let allBodies = [ground];
+
+  // Gravity toggle checkbox
+  const gravityToggle = document.getElementById('gravityToggle');
+  gravityToggle.addEventListener('change', () => {
+    engine.world.gravity.y = gravityToggle.checked ? 1 : 0;
+  });
+  // Initialize gravity
+  engine.world.gravity.y = gravityToggle.checked ? 1 : 0;
+
+  // Clear sandbox button
+  const clearBtn = document.getElementById('clearSandbox');
+  clearBtn.addEventListener('click', () => {
+    // Remove all bodies except ground
+    allBodies.forEach(body => {
+      if (body !== ground) World.remove(world, body);
+    });
+    allBodies = [ground];
+  });
+
+  // --- Create different block shapes ---
+
+  function createBlock(x, y, shape, color) {
+    let body;
+    const options = {
+      restitution: 0.3,
+      friction: 0.5,
+      render: { fillStyle: color, strokeStyle: '#333', lineWidth: 1 }
+    };
+
+    switch(shape) {
+      case 'circle':
+        body = Bodies.circle(x, y, 30, options);
+        break;
+      case 'square':
+        body = Bodies.rectangle(x, y, 60, 60, options);
+        break;
+      case 'rectangle':
+        body = Bodies.rectangle(x, y, 90, 50, options);
+        break;
+      case 'triangle':
+        body = Bodies.polygon(x, y, 3, 30, options);
+        break;
+      case 'hexagon':
+        body = Bodies.polygon(x, y, 6, 30, options);
+        break;
+      default:
+        // Default square
+        body = Bodies.rectangle(x, y, 60, 60, options);
+    }
+
+    return body;
+  }
+
+  // --- Create a simple ragdoll made of connected bodies ---
+  // Returns an array of all parts
+
+  function createRagdoll(x, y) {
+    const parts = {};
+
+    // Head (circle)
+    parts.head = Bodies.circle(x, y - 60, 20, { 
+      density: 0.001, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#777' }
+    });
+
+    // Torso (rectangle)
+    parts.torso = Bodies.rectangle(x, y, 40, 60, {
+      density: 0.002, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#555' }
+    });
+
+    // Left upper arm
+    parts.leftUpperArm = Bodies.rectangle(x - 35, y - 20, 20, 40, {
+      density: 0.001, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#444' }
+    });
+
+    // Left lower arm
+    parts.leftLowerArm = Bodies.rectangle(x - 35, y + 15, 20, 40, {
+      density: 0.001, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#333' }
+    });
+
+    // Right upper arm
+    parts.rightUpperArm = Bodies.rectangle(x + 35, y - 20, 20, 40, {
+      density: 0.001, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#444' }
+    });
+
+    // Right lower arm
+    parts.rightLowerArm = Bodies.rectangle(x + 35, y + 15, 20, 40, {
+      density: 0.001, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#333' }
+    });
+
+    // Left upper leg
+    parts.leftUpperLeg = Bodies.rectangle(x - 15, y + 60, 20, 50, {
+      density: 0.002, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#444' }
+    });
+
+    // Left lower leg
+    parts.leftLowerLeg = Bodies.rectangle(x - 15, y + 105, 20, 50, {
+      density: 0.002, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#333' }
+    });
+
+    // Right upper leg
+    parts.rightUpperLeg = Bodies.rectangle(x + 15, y + 60, 20, 50, {
+      density: 0.002, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#444' }
+    });
+
+    // Right lower leg
+    parts.rightLowerLeg = Bodies.rectangle(x + 15, y + 105, 20, 50, {
+      density: 0.002, frictionAir: 0.05,
+      restitution: 0.3,
+      render: { fillStyle: '#333' }
+    });
+
+    // Create constraints (joints) between parts
+    const constraints = [
+      Constraint.create({
+        bodyA: parts.head,
+        pointA: { x: 0, y: 20 },
+        bodyB: parts.torso,
+        pointB: { x: 0, y: -30 },
+        stiffness: 0.6,
+        length: 0
+      }),
+
+      // Left arm
+      Constraint.create({
+        bodyA: parts.leftUpperArm,
+        pointA: { x: 0, y: -20 },
+        bodyB: parts.torso,
+        pointB: { x: -20, y: -20 },
+        stiffness: 0.6,
+        length: 0
+      }),
+      Constraint.create({
+        bodyA: parts.leftLowerArm,
+        pointA: { x: 0, y: -20 },
+        bodyB: parts.leftUpperArm,
+        pointB: { x: 0, y: 20 },
+        stiffness: 0.6,
+        length: 0
+      }),
+
+      // Right arm
+      Constraint.create({
+        bodyA: parts.rightUpperArm,
+        pointA: { x: 0, y: -20 },
+        bodyB: parts.torso,
+        pointB: { x: 20, y: -20 },
+        stiffness: 0.6,
+        length: 0
+      }),
+      Constraint.create({
+        bodyA: parts.rightLowerArm,
+        pointA: { x: 0, y: -20 },
+        bodyB: parts.rightUpperArm,
+        pointB: { x: 0, y: 20 },
+        stiffness: 0.6,
+        length: 0
+      }),
+
+      // Left leg
+      Constraint.create({
+        bodyA: parts.leftUpperLeg,
+        pointA: { x: 0, y: -25 },
+        bodyB: parts.torso,
+        pointB: { x: -10, y: 30 },
+        stiffness: 0.6,
+        length: 0
+      }),
+      Constraint.create({
+        bodyA: parts.leftLowerLeg,
+        pointA: { x: 0, y: -25 },
+        bodyB: parts.leftUpperLeg,
+        pointB: { x: 0, y: 25 },
+        stiffness: 0.6,
+        length: 0
+      }),
+
+      // Right leg
+      Constraint.create({
+        bodyA: parts.rightUpperLeg,
+        pointA: { x: 0, y: -25 },
+        bodyB: parts.torso,
+        pointB: { x: 10, y: 30 },
+        stiffness: 0.6,
+        length: 0
+      }),
+      Constraint.create({
+        bodyA: parts.rightLowerLeg,
+        pointA: { x: 0, y: -25 },
+        bodyB: parts.rightUpperLeg,
+        pointB: { x: 0, y: 25 },
+        stiffness: 0.6,
+        length: 0
+      }),
+    ];
+
+    // Add parts and constraints to world
+    Object.values(parts).forEach(part => World.add(world, part));
+    constraints.forEach(c => World.add(world, c));
+
+    // Return all ragdoll parts in an array to track
+    return [...Object.values(parts), ...constraints];
+  }
+
+  // --- Setup mouse control ---
+  const mouse = Mouse.create(render.canvas);
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+      stiffness: 0.2,
+      render: { visible: false }
+    }
+  });
+  World.add(world, mouseConstraint);
+  render.mouse = mouse;
+
+  // --- Drag & drop logic from palette to sandbox ---
+
+  let draggedItem = null;
+
+  document.querySelectorAll('#palette .palette-item').forEach(item => {
+    item.addEventListener('dragstart', (e) => {
+      draggedItem = item;
+    });
+  });
+
+  sandbox.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+
+  sandbox.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+
+    // Calculate drop position relative to sandbox
+    const rect = sandbox.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (draggedItem.dataset.type === 'block') {
+      const shape = draggedItem.dataset.shape;
+      const color = draggedItem.dataset.color;
+      const block = createBlock(x, y, shape, color);
+      World.add(world, block);
+      allBodies.push(block);
+
+    } else if (draggedItem.dataset.type === 'ragdoll') {
+      const ragdollParts = createRagdoll(x, y);
+      ragdollParts.forEach(p => allBodies.push(p));
+    }
+
+    draggedItem = null;
+  });
+
+  /*
+  === HOW TO ADD NEW BLOCKS GUIDE ===
+
+  1. Add a new block element inside the palette HTML:
+
+    <div class="palette-item newcolor shape" draggable="true"
+         data-type="block" data-shape="newshape" data-color="#hexcolor">Label</div>
+
+  2. Add CSS styles for your new color and shape if needed:
+
+    .newcolor { background-color: #hexcolor; color: contrastColor; }
+    .shape { width: ..., height: ..., border-radius: ...; }
+
+  3. Update the createBlock(x, y, shape, color) function:
+
+    case 'newshape':
+      return Bodies.rectangle(x, y, width, height, { restitution: 0.3, friction: 0.5, render: { fillStyle: color } });
+      // or use Bodies.circle or Bodies.polygon for different shapes
+
+  4. Now you can drag and drop your new block into the sandbox!
+
+  ===================================
+  */
+
+</script>
+
+</body>
+</html>

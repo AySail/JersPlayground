@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Make The Universe - Jers Playground</title>
+<style>
+  /* Basic reset and full screen black background */
+  body, html {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: black;
+    user-select: none;
+    font-family: Arial, sans-serif;
+    color: white;
+  }
+
+  /* Container for all items - huge fixed universe */
+  #game {
+    position: relative;
+    width: 5000px;
+    height: 5000px;
+    background: radial-gradient(circle, #111 40%, #000 100%);
+    cursor: grab;
+    transform-origin: 0 0;
+    overflow: visible;
+  }
+
+  /* All items style */
+  .item {
+    position: absolute;
+    min-width: 80px; /* wider to fit full name */
+    height: 50px;
+    border-radius: 25px; /* pill shape */
+    background: gray;
+    box-shadow: 0 0 5px #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    user-select: none;
+    padding: 0 8px;
+    white-space: nowrap;
+    pointer-events: auto;
+    cursor: grab;
+    font-size: 14px;
+    text-shadow: 0 0 4px black;
+  }
+
+  /* Different colors per type */
+  .Rock {
+    background: #555;
+    box-shadow: 0 0 10px #666;
+  }
+  .Asteroid {
+    background: #888855;
+    box-shadow: 0 0 15px #aaa844;
+  }
+  .Planet {
+    background: #3366ff;
+    box-shadow: 0 0 20px #3399ff;
+  }
+  .Super-Earth {
+    background: #33cc33;
+    box-shadow: 0 0 25px #66ff66;
+  }
+  .Super-Super-Earth {
+    background: #cc33cc;
+    box-shadow: 0 0 30px #ff66ff;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="game"></div>
+
+<script>
+  /*
+  ===============================
+  HOW TO ADD NEW OBJECTS & MERGES
+  ===============================
+
+  1) Add new CSS class for the object:
+     Example:
+     .Mega-Earth {
+       background: #ffaa00;
+       box-shadow: 0 0 30px #ffbb33;
+     }
+
+  2) Add new merge recipe to 'recipes' object:
+     Example:
+     recipes["Super-Super-Earth+Super-Super-Earth"] = "Mega-Earth";
+
+  3) Create new items in universe by calling:
+     createItem("Mega-Earth", x, y);
+
+  Notes:
+  - The key in 'recipes' is alphabetically sorted names joined by '+'
+  - Names must match exactly in CSS, recipes, and createItem calls
+  - Merging removes the source items and adds the merged one at average position
+  - You can add special logic to new objects by extending createItem or drag functions
+
+  Happy crafting your universe! 🚀🌌
+  */
+
+  const game = document.getElementById('game');
+
+  // Universe dimensions
+  const universeWidth = 5000;
+  const universeHeight = 5000;
+
+  // Starting pan and zoom values
+  let translateX = window.innerWidth / 2 - universeWidth / 2;
+  let translateY = window.innerHeight / 2 - universeHeight / 2;
+  let scale = 1;
+
+  // Drag pan vars
+  let isPanning = false;
+  let panStartX = 0, panStartY = 0;
+  let panLastX = 0, panLastY = 0;
+
+  // Items currently on the map
+  let items = [];
+
+  // Recipes for merges: key must be alphabetically sorted item names joined by '+'
+  const recipes = {
+    "Asteroid+Asteroid": "Planet",
+    "Planet+Planet": "Super-Earth",
+    "Rock+Rock": "Asteroid",
+    "Super-Earth+Super-Earth": "Super-Super-Earth"
+  };
+
+  // Utility to sort keys alphabetically for recipe matching
+  function recipeKey(name1, name2) {
+    return [name1, name2].sort().join('+');
+  }
+
+  // Apply CSS transform for pan + zoom
+  function updateTransform() {
+    game.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  }
+
+  updateTransform();
+
+  // Create and add a new item to the universe
+  function createItem(name, x, y) {
+    const el = document.createElement('div');
+    el.className = 'item ' + name.replace(/\s+/g,'');
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.textContent = name; // Show full name now
+    game.appendChild(el);
+
+    // Store in items array
+    const item = {
+      name,
+      x,
+      y,
+      el,
+      dragging: false
+    };
+
+    // Enable drag-and-drop merging on this item
+    enableDrag(item);
+
+    items.push(item);
+    return item;
+  }
+
+  // Enable dragging for merge on an item
+  function enableDrag(item) {
+    let offsetX, offsetY;
+    let dragged = false;
+
+    const onMouseDown = (e) => {
+      e.stopPropagation(); // Prevent starting pan when dragging item
+      dragged = false;
+      item.dragging = true;
+      offsetX = e.clientX;
+      offsetY = e.clientY;
+      // Bring dragged item to front
+      item.el.style.zIndex = 1000;
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    };
+
+    const onMouseMove = (e) => {
+      if (!item.dragging) return;
+      dragged = true;
+
+      // Calculate movement delta in screen pixels
+      const dx = (e.clientX - offsetX) / scale;
+      const dy = (e.clientY - offsetY) / scale;
+
+      offsetX = e.clientX;
+      offsetY = e.clientY;
+
+      // Update item position
+      item.x += dx;
+      item.y += dy;
+
+      item.el.style.left = item.x + 'px';
+      item.el.style.top = item.y + 'px';
+    };
+
+    const onMouseUp = (e) => {
+      if (!item.dragging) return;
+      item.dragging = false;
+      item.el.style.zIndex = '';
+
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+
+      if (dragged) {
+        // Check for merge on drop
+        checkMerge(item);
+      }
+    };
+
+    item.el.addEventListener('mousedown', onMouseDown);
+  }
+
+  // Check if 'item' overlaps another item for merging
+  function checkMerge(item) {
+    // Check all other items for collision with current item
+    for (const other of items) {
+      if (other === item) continue;
+
+      if (isOverlapping(item, other)) {
+        // Try to merge
+        const key = recipeKey(item.name, other.name);
+        if (recipes[key]) {
+          // Merge success - remove old items
+          game.removeChild(item.el);
+          game.removeChild(other.el);
+          items = items.filter(i => i !== item && i !== other);
+
+          // Create new merged item at average position
+          const nx = (item.x + other.x) / 2;
+          const ny = (item.y + other.y) / 2;
+          createItem(recipes[key], nx, ny);
+          return; // Only one merge per drop
+        }
+      }
+    }
+  }
+
+  // Check overlap of two items (simple bounding box)
+  function isOverlapping(a, b) {
+    const sizeX = a.el.offsetWidth; // variable width because of name length
+    const sizeY = a.el.offsetHeight;
+    const bSizeX = b.el.offsetWidth;
+    const bSizeY = b.el.offsetHeight;
+
+    return !(
+      a.x + sizeX < b.x ||
+      a.x > b.x + bSizeX ||
+      a.y + sizeY < b.y ||
+      a.y > b.y + bSizeY
+    );
+  }
+
+  // Spawn initial rocks randomly in universe center area
+  function init() {
+    for(let i=0; i<50; i++) {
+      const x = universeWidth/2 + (Math.random() - 0.5) * 800;
+      const y = universeHeight/2 + (Math.random() - 0.5) * 800;
+      createItem("Rock", x, y);
+    }
+  }
+
+  init();
+
+  // Spawn new objects dynamically as player pans near edges
+  function spawnObjectsIfNeeded() {
+    // Calculate current center position in universe coords
+    const centerX = (window.innerWidth / 2 - translateX) / scale;
+    const centerY = (window.innerHeight / 2 - translateY) / scale;
+
+    // Threshold radius from center to spawn new objects
+    const spawnRadius = 1200;
+
+    // Count existing items beyond spawnRadius, to avoid over-spawning
+    const farItemsCount = items.filter(item => {
+      const dx = item.x - universeWidth/2;
+      const dy = item.y - universeHeight/2;
+      return Math.sqrt(dx*dx + dy*dy) > spawnRadius - 100;
+    }).length;
+
+    // If not many far items, spawn more randomly around the edges
+    if (farItemsCount < 30) {
+      // Spawn some rocks randomly in ring beyond spawnRadius
+      for(let i=0; i<10; i++) {
+        // Random angle and distance between spawnRadius and spawnRadius+400
+        const angle = Math.random() * Math.PI * 2;
+        const dist = spawnRadius + Math.random() * 400;
+
+        // Position relative to universe center
+        const x = universeWidth/2 + Math.cos(angle) * dist;
+        const y = universeHeight/2 + Math.sin(angle) * dist;
+
+        // Randomly decide what to spawn based on chance
+        const r = Math.random();
+        if (r < 0.6) {
+          createItem("Rock", x, y);
+        } else if (r < 0.85) {
+          createItem("Asteroid", x, y);
+        } else {
+          createItem("Planet", x, y);
+        }
+      }
+    }
+  }
+
+  // Update transform on pan or zoom
+  function update() {
+    updateTransform();
+    spawnObjectsIfNeeded();
+  }
+
+  // Panning handlers
+  game.addEventListener('mousedown', (e) => {
+    // Only start pan if clicking background, not items
+    if (e.target !== game) return;
+
+    e.preventDefault();
+    isPanning = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panLastX = translateX;
+    panLastY = translateY;
+    game.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isPanning) {
+      isPanning = false;
+      game.style.cursor = 'grab';
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+
+    const dx = e.clientX - panStartX;
+    const dy = e.clientY - panStartY;
+
+    translateX = panLastX + dx;
+    translateY = panLastY + dy;
+
+    update();
+  });
+
+  // Zoom handler with mouse wheel
+  window.addEventListener('wheel', (e) => {
+    e.preventDefault();
+
+    const zoomSpeed = 0.0015;
+    let newScale = scale - e.deltaY * zoomSpeed;
+
+    // Clamp zoom scale
+    newScale = Math.min(Math.max(newScale, 0.3), 3);
+
+    // Zoom relative to mouse pointer
+    const rect = game.getBoundingClientRect();
+    const mx = e.clientX;
+    const my = e.clientY;
+
+    // Calculate offsets from top-left corner of universe container
+    const dx = (mx - rect.left) / scale;
+    const dy = (my - rect.top) / scale;
+
+    // Adjust translate so zoom centers on mouse pointer
+    translateX -= dx * (newScale - scale);
+    translateY -= dy * (newScale - scale);
+
+    scale = newScale;
+    update();
+  }, { passive: false });
+
+</script>
+
+</body>
+</html>

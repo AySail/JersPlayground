@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elemental Sandbox - Beta Version</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #2f2f2f; /* Default Dark Background */
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      background: #1c1c1c; /* Default Dark Canvas */
+      border: 1px solid #444;
+    }
+    .button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 10px;
+      background-color: #444;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      z-index: 10;
+      user-select: none;
+      margin-bottom: 5px;
+    }
+    #toggleMobileControls {
+      top: 70px;
+    }
+    #resetCanvas {
+      top: 120px;
+    }
+    #elementSelector {
+      position: absolute;
+      top: 170px;
+      left: 20px;
+      background-color: #444;
+      padding: 10px;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+      user-select: none;
+      z-index: 10;
+    }
+    #elementSelector div {
+      padding: 5px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    #elementSelector div.selected {
+      background-color: #666;
+    }
+    #instructions {
+      position: absolute;
+      top: 480px;
+      left: 20px;
+      width: 350px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #222;
+      padding: 15px;
+      font-size: 14px;
+      line-height: 1.4;
+      border-radius: 8px;
+      z-index: 10;
+      color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="sandbox"></canvas>
+  <button class="button" id="toggleMode">Toggle Light/Dark Mode</button>
+  <button class="button" id="toggleMobileControls" style="top: 70px;">Toggle Mobile Controls</button>
+  <button class="button" id="resetCanvas" style="top: 120px;">Reset Canvas</button>
+
+  <!-- Element selector UI -->
+  <div id="elementSelector"></div>
+
+  <!-- Instructions and guide -->
+  <div id="instructions">
+    <strong>How to Add More Rules & Elements:</strong><br /><br />
+    1. <em>Add new element type:</em> Define color & add it to the elements list.<br />
+    2. <em>Define behavior:</em> Update physics & special actions in update().<br />
+    3. <em>Add interactions:</em> Define how it reacts with others in checkInteractions().<br />
+    4. <em>Draw properly:</em> Set color and add any special drawing in draw().<br />
+    5. <em>Update UI:</em> Add element to selection list for placement.<br /><br />
+    <em>Example:</em> Add "Lightning" element:<br />
+    - Color: <code>#FFFFAA</code><br />
+    - Behavior: moves randomly, limited life<br />
+    - Interaction: zaps fire to remove it<br /><br />
+    Use space to cycle elements, R to spawn random elements.<br />
+    Click or drag on canvas to place elements.<br />
+  </div>
+
+  <script>
+    // ===============================
+    // ELEMENTAL SANDBOX BETA VERSION
+    // ===============================
+    //
+    // HOW TO ADD MORE RULES & ELEMENTS:
+    //
+    // 1. Add new element type:
+    //    Define color & add it to the elements list.
+    //
+    // 2. Define behavior:
+    //    Update physics & special actions in update().
+    //
+    // 3. Add interactions:
+    //    Define how it reacts with others in checkInteractions().
+    //
+    // 4. Draw properly:
+    //    Set color and add any special drawing in draw().
+    //
+    // 5. Update UI:
+    //    Add element to selection list for placement.
+    //
+    // Example: Add "Lightning" element:
+    // - Color: #FFFFAA
+    // - Behavior: moves randomly, limited life
+    // - Interaction: zaps fire to remove it
+    //
+    // Use Space to cycle elements, R to spawn random elements.
+    // Click or drag on canvas to place elements.
+    //
+    // ===============================
+
+    (() => {
+      // Canvas setup
+      const canvas = document.getElementById("sandbox");
+      const ctx = canvas.getContext("2d");
+
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // Floor line position
+      const FLOOR_Y = height - 20;
+
+      // Dark mode flag
+      let isDarkMode = true;
+
+      // Mobile controls flag
+      let mobileControlsEnabled = false;
+
+      // Sound effects (optional)
+      const clickSound = new Audio(
+        "https://www.soundjay.com/button/beep-07.wav"
+      );
+      const transformSound = new Audio(
+        "https://www.soundjay.com/button/beep-10.wav"
+      );
+
+      // Element colors dictionary
+      const COLORS = {
+        sand: "#D2B48C",
+        water: "#00BFFF",
+        lava: "#FF4500",
+        gravel: "#808080",
+        dirt: "#8B4513",
+        stone: "#A9A9A9",
+        glass: "#FFFFFF",
+        obsidian: "#000000",
+        ice: "#ADD8E6",
+        fire: "#FFAA00",
+        steam: "#CCCCCC",
+        lightning: "#FFFFAA", // New example element
+      };
+
+      // Available elements for selection
+      let availableElements = [
+        "sand",
+        "lava",
+        "water",
+        "gravel",
+        "dirt",
+        "stone",
+        "glass",
+        "ice",
+        "fire",
+        "steam",
+        "lightning", // Added lightning to UI
+      ];
+
+      // Physics constants
+      const GRAVITY = 1.5;
+      const WATER_GRAVITY = 0.4;
+      const WATER_FLOW = 0.3;
+
+      // Current element selected to place
+      let currentElement = "sand";
+
+      // The elements array stores all particles on screen
+      const elements = [];
+
+      // ELEMENT CLASS DEFINITION
+      class Element {
+        constructor(x, y, type) {
+          this.x = x;
+          this.y = y;
+          this.type = type;
+          this.size = 5;
+          this.velocityX = 0;
+          this.velocityY = 0;
+
+          // For some elements like steam or lightning
+          this.life = 0;
+          this.maxLife = 100;
+        }
+
+        update() {
+          // Sand, lava, gravel, stone, dirt fall with gravity
+          if (
+            this.type === "sand" ||
+            this.type === "lava" ||
+            this.type === "gravel" ||
+            this.type === "stone" ||
+            this.type === "dirt" ||
+            this.type === "fire"
+          ) {
+            this.velocityY += GRAVITY;
+            this.y += this.velocityY;
+            this.handleCollisions();
+
+            if (this.y >= FLOOR_Y - this.size) {
+              this.y = FLOOR_Y - this.size;
+              this.velocityY = 0;
+            }
+          } else if (this.type === "water") {
+            // Water falls slower and flows horizontally
+            this.velocityY += WATER_GRAVITY;
+            this.y += this.velocityY;
+
+            if (Math.random() < WATER_FLOW) {
+              this.x += Math.random() > 0.5 ? 1 : -1;
+            }
+
+            if (this.y >= FLOOR_Y - this.size) {
+              this.y = FLOOR_Y - this.size;
+              this.velocityY = 0;
+            }
+          } else if (this.type === "steam") {
+            // Steam floats upward and fades out
+            this.y -= 1;
+            this.life++;
+            if (this.life > this.maxLife) this.removeSelf();
+          } else if (this.type === "lightning") {
+            // Lightning moves randomly and disappears after maxLife
+            this.x += (Math.random() - 0.5) * 8;
+            this.y += (Math.random() - 0.5) * 8;
+            this.life++;
+            if (this.life > this.maxLife) this.removeSelf();
+          }
+
+          this.checkInteractions();
+        }
+
+        // Basic collision to stack elements
+        handleCollisions() {
+          for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            if (
+              this !== element &&
+              Math.abs(this.x - element.x) < this.size &&
+              Math.abs(this.y - element.y) < this.size
+            ) {
+              if (this.y + this.size > element.y) {
+                this.y = element.y - this.size;
+                this.velocityY = 0;
+              }
+            }
+          }
+        }
+
+        // Interaction rules between elements
+        checkInteractions() {
+          for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+
+            // Lava turns sand into glass
+            if (
+              this.type === "lava" &&
+              el.type === "sand" &&
+              Math.abs(this.x - el.x) < 10 &&
+              Math.abs(this.y - el.y) < 10
+            ) {
+              el.type = "glass";
+              el.size = 8;
+              transformSound.play();
+            }
+
+            // Lava turns ice into obsidian
+            if (
+              this.type === "lava" &&
+              el.type === "ice" &&
+              Math.abs(this.x - el.x) < 10 &&
+              Math.abs(this.y - el.y) < 10
+            ) {
+              el.type = "obsidian";
+              el.size = 8;
+              transformSound.play();
+            }
+
+            // Fire evaporates water into steam
+            if (
+              this.type === "fire" &&
+              el.type === "water" &&
+              Math.abs(this.x - el.x) < 10 &&
+              Math.abs(this.y - el.y) < 10
+            ) {
+              el.type = "steam";
+              el.size = 6;
+              el.life = 0;
+              el.maxLife = 120;
+              transformSound.play();
+            }
+
+            // Lightning zaps fire and removes it
+            if (
+              this.type === "lightning" &&
+              el.type === "fire" &&
+              Math.abs(this.x - el.x) < 20 &&
+              Math.abs(this.y - el.y) < 20
+            ) {
+              el.removeSelf();
+              transformSound.play();
+            }
+          }
+        }
+
+        // Remove element from elements array
+        removeSelf() {
+          const index = elements.indexOf(this);
+          if (index > -1) {
+            elements.splice(index, 1);
+          }
+        }
+
+        // Draw the element on canvas
+        draw() {
+          ctx.fillStyle = COLORS[this.type] || "#FFF";
+          ctx.fillRect(this.x, this.y, this.size, this.size);
+        }
+      }
+
+      // UI Element Selector Setup
+      const elementSelector = document.getElementById("elementSelector");
+
+      // Populate UI for selecting elements
+      function updateElementListUI() {
+        elementSelector.innerHTML = "";
+        availableElements.forEach((elType) => {
+          const elDiv = document.createElement("div");
+          elDiv.textContent = elType;
+          elDiv.style.color = COLORS[elType] || "#FFF";
+          if (elType === currentElement) elDiv.classList.add("selected");
+          elDiv.addEventListener("click", () => {
+            currentElement = elType;
+            updateElementListUI();
+          });
+          elementSelector.appendChild(elDiv);
+        });
+      }
+      updateElementListUI();
+
+      // Event listeners for buttons
+      document.getElementById("toggleMode").addEventListener("click", () => {
+        isDarkMode = !isDarkMode;
+        if (isDarkMode) {
+          document.body.style.backgroundColor = "#2f2f2f";
+          canvas.style.backgroundColor = "#1c1c1c";
+        } else {
+          document.body.style.backgroundColor = "#ADD8E6";
+          canvas.style.backgroundColor = "#ffffff";
+        }
+      });
+
+      document
+        .getElementById("toggleMobileControls")
+        .addEventListener("click", () => {
+          mobileControlsEnabled = !mobileControlsEnabled;
+          alert(
+            `Mobile controls are now ${
+              mobileControlsEnabled ? "enabled" : "disabled"
+            }.`
+          );
+        });
+
+      // Reset canvas button: clears all elements
+      document.getElementById("resetCanvas").addEventListener("click", () => {
+        elements.length = 0; // Clear all elements
+      });
+
+      // Add elements on mouse drag or touch
+      function addElementAt(x, y) {
+        const el = new Element(x, y, currentElement);
+        elements.push(el);
+        clickSound.play();
+      }
+
+      canvas.addEventListener("mousemove", (e) => {
+        if (e.buttons === 1) {
+          addElementAt(e.clientX, e.clientY);
+        }
+      });
+
+      canvas.addEventListener("touchmove", (e) => {
+        if (mobileControlsEnabled) {
+          e.preventDefault();
+          const touch = e.touches[0];
+          addElementAt(touch.clientX, touch.clientY);
+        }
+      });
+
+      // Keyboard controls
+      document.addEventListener("keydown", (e) => {
+        if (e.key === " ") {
+          // Cycle element
+          let idx = availableElements.indexOf(currentElement);
+          idx = (idx + 1) % availableElements.length;
+          currentElement = availableElements[idx];
+          updateElementListUI();
+        }
+        if (e.key === "r") {
+          // Spawn random elements
+          const groupElements = [
+            "sand",
+            "lava",
+            "water",
+            "gravel",
+            "stone",
+            "ice",
+            "fire",
+          ];
+          for (let i = 0; i < 15; i++) {
+            const type =
+              groupElements[Math.floor(Math.random() * groupElements.length)];
+            elements.push(
+              new Element(Math.random() * width, Math.random() * height, type)
+            );
+          }
+        }
+      });
+
+      // Main loop
+      function gameLoop() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw floor line
+        ctx.strokeStyle = isDarkMode ? "#555" : "#222";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, FLOOR_Y);
+        ctx.lineTo(width, FLOOR_Y);
+        ctx.stroke();
+
+        // Update and draw elements
+        elements.forEach((el) => {
+          el.update();
+        });
+        elements.forEach((el) => {
+          el.draw();
+        });
+
+        requestAnimationFrame(gameLoop);
+      }
+      gameLoop();
+
+      // Resize handler
+      window.addEventListener("resize", () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+      });
+    })();
+  </script>
+</body>
+</html>

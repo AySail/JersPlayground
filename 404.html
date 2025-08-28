@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>404 Not Found</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #ffffff;
+      color: #ccbdbd;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 6rem;
+      margin-bottom: 0;
+      color: #ff4c4c;
+      text-shadow: 1px 1px 5px #ff0000aa;
+    }
+    p {
+      font-size: 1.5rem;
+      margin: 10px 0 30px 0;
+      max-width: 480px;
+    }
+    .btn-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .btn {
+      background-color: #007acc;
+      color: white;
+      padding: 15px 25px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 8px rgba(0,122,204,0.4);
+      transition: background-color 0.3s ease;
+      min-width: 140px;
+      user-select: none;
+    }
+    .btn:hover {
+      background-color: #005fa3;
+      box-shadow: 0 6px 12px rgba(0,95,163,0.6);
+    }
+    .btn-home {
+      background-color: #ff4c4c;
+      box-shadow: 0 4px 8px rgba(255,76,76,0.5);
+    }
+    .btn-home:hover {
+      background-color: #cc3a3a;
+      box-shadow: 0 6px 12px rgba(204,58,58,0.7);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>404</h1>
+  <p>That nonsense does not exist in this universe!....yet...<br>Don't worry, play some games like Sandbox Mode or Roll a dice,<br>or better yet, visit the homepage!</p>
+
+  <div class="btn-container">
+    <a href="games/sandbox.html" class="btn">Play Sandbox Mode</a>
+    <a href="games/dice.html" class="btn">Roll a Dice</a>
+  </div>
+
+  <a href="index.html" class="btn btn-home">Go back to homepage!</a>
+
+</body>
+</html>

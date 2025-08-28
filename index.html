@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jer’s Playground</title>
+  <style>
+    /* Base Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #fdfdfd;
+      color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 600px;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tagline {
+      font-size: 1.2rem;
+      color: #555;
+      margin-bottom: 2rem;
+    }
+
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .links a {
+      text-decoration: none;
+      font-size: 1.2rem;
+      color: #007acc;
+      transition: 0.2s ease;
+    }
+
+    .links a:hover {
+      color: #005999;
+      transform: scale(1.05);
+    }
+
+    .footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Jer’s Playground</h1>
+    <p class="tagline">A collection of fun experiments, games, and oddities.</p>
+
+    <div class="links" id="links">
+      <a  href="/music.html"> 🎵Music Maker</a>
+      <a  href="/dice.html"> 🎲 Dice Roller</a>
+      <a href="/sandbox.html">📦 Sandbox Mode</a>
+      <a href="/paintparty.html">🎨 Paint Party</a>
+       <a  href="/space.html"> 🌌Space</a>
+      <a  href="/chatbot.html"> 🤖Chatbot</a>
+       <a  href="/elementsandbox.html"> 🔥💧Element Playground (BETA)</a>
+       <a  href="games/MAKETHEUNIVERSE.HTML"> 🪐Space Sandbox (INDEV)</a>
+
+
+    </div>
+
+    <div class="footer">Made with fun by Jer 😎</div>
+  </div>
+
+  <script>
+    // Simple routing system (you can replace with actual pages later)
+    function launchGame(game) {
+      switch(game) {
+        case '🎵Music Maker':
+          alert("🎵Music Maker Out now!");
+          break;
+        case 'dice':
+          const roll = Math.floor(Math.random() * 6) + 1;
+          alert("🎲 You rolled a " + roll + "!");
+          break;
+        case 'sandbox':
+          alert("Sandbox, theres no such thing as a roadblock");
+          break;
+        case 'paint':
+          alert("🎨 Imagine a canvas... coming soon!");
+          break;
+        case 'space':
+          alert(" Imagine a canvas... coming soon!");
+          break;
+          case 'Chatbot':
+          alert("💬Cant chat right now beep boop!");
+          break;
+        default:
+          alert("🚧 Unknown game!");
+      }
+    }
+  </script>
+</body>
+</html>

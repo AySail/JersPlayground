@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🚀 Space Explorer Expanded</title>
+<style>
+  :root {
+    --bg-dark: #000011;
+    --bg-dark-alt: #000000;
+    --color-text: #eee;
+    --color-accent: #4466ff;
+    --color-accent-light: #4466ff44;
+    --color-info-bg: rgba(255 255 255 / 0.1);
+    --color-fav: gold;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at center, var(--bg-dark), var(--bg-dark-alt));
+    color: var(--color-text);
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+    transition: background-color 0.5s ease, color 0.5s ease;
+    user-select: none;
+  }
+  body.light {
+    --bg-dark: #e0e6f3;
+    --bg-dark-alt: #f7f9fc;
+    --color-text: #222;
+    --color-accent: #3366ff;
+    --color-accent-light: #3366ff44;
+    --color-info-bg: rgba(0 0 0 / 0.05);
+  }
+
+  h1 {
+    margin-bottom: 10px;
+  }
+  p {
+    margin-top: 0;
+    font-style: italic;
+    color: var(--color-text);
+  }
+
+  /* Controls area */
+  #controls {
+    margin-bottom: 15px;
+  }
+  select, input[type="search"] {
+    font-size: 1rem;
+    padding: 8px 12px;
+    margin: 5px;
+    border-radius: 8px;
+    border: none;
+    background-color: #222;
+    color: var(--color-text);
+    cursor: pointer;
+    max-width: 320px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  body.light select, body.light input[type="search"] {
+    background-color: #ddd;
+    color: #222;
+  }
+  #toggleDarkMode {
+    background: var(--color-accent);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-weight: bold;
+    user-select: none;
+  }
+  #toggleDarkMode:hover {
+    background: #2244dd;
+  }
+
+  /* Buttons Container */
+  #buttonsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 15px;
+  }
+  button.objectBtn {
+    background: #222;
+    border: 2px solid var(--color-accent);
+    color: #aad;
+    font-size: 1rem;
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    min-width: 90px;
+    position: relative;
+    user-select: none;
+  }
+  button.objectBtn:hover,
+  button.objectBtn:focus-visible {
+    background-color: var(--color-accent-light);
+    outline: none;
+  }
+  button.objectBtn.favorited {
+    border-color: var(--color-fav);
+    color: var(--color-fav);
+  }
+  button.objectBtn .star {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    font-size: 1.2rem;
+    pointer-events: none;
+    user-select: none;
+  }
+  button#copyNameBtn {
+    background: var(--color-accent);
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+  }
+  button#copyNameBtn:hover {
+    background: #2244dd;
+  }
+
+  /* Object info panel */
+  #objectInfo {
+    margin-top: 20px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 15px 20px 25px;
+    background: var(--color-info-bg);
+    border-radius: 12px;
+    text-align: left;
+    box-shadow: 0 0 25px var(--color-accent-light);
+    position: relative;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #objectInfo.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  #objectInfo h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  #objectDesc {
+    font-size: 1.1rem;
+    line-height: 1.4;
+  }
+  #objectImage {
+    max-width: 100%;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0 0 20px 5px rgba(255,255,255,0.2);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    cursor: zoom-in;
+    user-select: none;
+  }
+
+  /* Close button on info panel */
+  #closeInfoBtn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  #closeInfoBtn:hover {
+    color: var(--color-accent);
+  }
+
+  /* Object index display */
+  #objectIndex {
+    margin-top: 5px;
+    text-align: center;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+
+  /* 3D container */
+  #threeContainer {
+    max-width: 600px;
+    margin: 20px auto;
+    height: 400px;
+    border-radius: 12px;
+    box-shadow: 0 0 30px #4466ff88;
+    background: #111;
+    display: none; /* hidden initially, only for planets */
+    user-select: none;
+  }
+
+  /* Modal for zoomed image */
+  #imageModal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.9);
+    justify-content: center;
+    align-items: center;
+  }
+  #imageModal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 0 50px #4466ffbb;
+    cursor: zoom-out;
+    user-select: none;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 650px) {
+    #buttonsContainer {
+      justify-content: center;
+    }
+    #threeContainer {
+      height: 300px;
+      max-width: 90vw;
+    }
+  }
+</style>
+
+<!-- Three.js and OrbitControls CDN scripts for 3D -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.min.js"></script>
+</head>
+<body>
+
+<h1>🚀 Space Explorer Expanded</h1>
+<p>Select a category and explore the universe!</p>
+
+<div id="controls" role="region" aria-label="Category selection and search">
+  <label for="categorySelect" style="user-select:none;">Category:</label>
+  <select id="categorySelect" aria-live="polite">
+    <option value="planets">Planets</option>
+    <option value="stars">Stars</option>
+    <option value="galaxies">Galaxies</option>
+  </select>
+
+  <label for="searchInput" style="user-select:none;">Search:</label>
+  <input type="search" id="searchInput" placeholder="Filter objects by name" aria-label="Filter objects by name" />
+
+  <button id="toggleDarkMode" aria-pressed="false" title="Toggle Dark/Light Mode">Dark Mode</button>
+</div>
+
+<div id="buttonsContainer" role="list" aria-live="polite" aria-label="Celestial objects list"></div>
+
+<div id="objectInfo" role="region" aria-live="polite" aria-atomic="true" aria-label="Selected object details" tabindex="0">
+  <button id="closeInfoBtn" aria-label="Close object details">&times;</button>
+  <h2 id="objectName">Select an object</h2>
+  <img id="objectImage" alt="" />
+  <p id="objectDesc"></p>
+  <div id="objectIndex" aria-live="polite"></div>
+  <button id="copyNameBtn" aria-label="Copy object name to clipboard" title="Copy name">Copy Name</button>
+</div>
+
+<div id="threeContainer" aria-label="3D view of the selected planet" role="region" tabindex="0"></div>
+
+<div id="imageModal" role="dialog" aria-modal="true" aria-label="Zoomed image view">
+  <img src="" alt="" />
+</div>
+
+<script>
+  (() => {
+    // Data sets with images (mostly public domain or NASA)
+    const data = {
+      planets: [
+        { name: "Mercury", description: "The smallest and closest planet to the Sun.", image: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Mercury_in_true_color.jpg" },
+        { name: "Venus", description: "The hottest planet with a thick toxic atmosphere.", image: "https://upload.wikimedia.org/wikipedia/commons/e/e5/Venus-real_color.jpg" },
+        { name: "Earth", description: "Our home planet, the only one known to support life.", image: "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg" },
+        { name: "Mars", description: "Known as the Red Planet, possible past water and life.", image: "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg" },
+        { name: "Jupiter", description: "The largest planet with a giant red storm.", image: "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg" },
+        { name: "Saturn", description: "Famous for its spectacular ring system.", image: "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg" },
+        { name: "Uranus", description: "An ice giant with a unique tilted rotation axis.", image: "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg" },
+        { name: "Neptune", description: "A distant ice giant known for its strong winds.", image: "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg" },
+        { name: "Pluto", description: "A dwarf planet in the Kuiper belt.", image: "https://upload.wikimedia.org/wikipedia/commons/2/2a/Nh-pluto-in-true-color_2x_JPEG-edit-frame.jpg" }
+      ],
+      stars: [
+        { name: "Sun", description: "Our closest star and source of light and heat.", image: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Solar_sys8.jpg" },
+        { name: "Sirius", description: "The brightest star in the night sky.", image: "https://upload.wikimedia.org/wikipedia/commons/5/53/Sirius_A_and_B_Hubble_photo.jpg" },
+        { name: "Betelgeuse", description: "A red supergiant nearing the end of its life.", image: "https://upload.wikimedia.org/wikipedia/commons/6/6e/Betelgeuse_star.jpg" },
+        { name: "Rigel", description: "A blue supergiant and one of the brightest stars.", image: "https://upload.wikimedia.org/wikipedia/commons/1/11/Rigel_Star_2013.jpg" },
+        { name: "Polaris", description: "The North Star, important for navigation.", image: "https://upload.wikimedia.org/wikipedia/commons/9/9e/Polaris_image_from_Hubble.jpg" }
+      ],
+      galaxies: [
+        { name: "Milky Way", description: "Our galaxy, containing our Solar System.", image: "https://upload.wikimedia.org/wikipedia/commons/8/88/Milky_Way_Galaxy.jpg" },
+        { name: "Andromeda", description: "Nearest spiral galaxy to the Milky Way.", image: "https://upload.wikimedia.org/wikipedia/commons/9/9f/Andromeda_Galaxy_%28with_h-alpha%29.jpg" },
+        { name: "Sombrero", description: "A bright galaxy with a large central bulge and dust lane.", image: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Sombrero_Galaxy_by_HST.jpg" },
+        { name: "Whirlpool", description: "A classic spiral galaxy interacting with a smaller companion.", image: "https://upload.wikimedia.org/wikipedia/commons/4/49/NGC_5194_Whirlpool_Galaxy.jpg" }
+      ]
+    };
+
+    // References to DOM elements
+    const categorySelect = document.getElementById('categorySelect');
+    const buttonsContainer = document.getElementById('buttonsContainer');
+    const objectName = document.getElementById('objectName');
+    const objectDesc = document.getElementById('objectDesc');
+    const objectImage = document.getElementById('objectImage');
+    const objectInfo = document.getElementById('objectInfo');
+    const closeInfoBtn = document.getElementById('closeInfoBtn');
+    const searchInput = document.getElementById('searchInput');
+    const objectIndex = document.getElementById('objectIndex');
+    const copyNameBtn = document.getElementById('copyNameBtn');
+    const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
+    const threeContainer = document.getElementById('threeContainer');
+    const imageModal = document.getElementById('imageModal');
+    const imageModalImg = imageModal.querySelector('img');
+
+    // State
+    let currentCategory = 'planets';
+    let filteredObjects = [];
+    let selectedIndex = -1;
+    let favorites = new Set(JSON.parse(localStorage.getItem('spaceExplorerFavorites') || '[]'));
+
+    // Dark mode initial state from localStorage
+    const savedDarkMode = localStorage.getItem('spaceExplorerDarkMode') === 'true';
+    if (savedDarkMode) document.body.classList.add('light');
+    toggleDarkModeBtn.textContent = savedDarkMode ? 'Light Mode' : 'Dark Mode';
+    toggleDarkModeBtn.setAttribute('aria-pressed', savedDarkMode ? 'true' : 'false');
+
+    // Utility: Save favorites to localStorage
+    function saveFavorites() {
+      localStorage.setItem('spaceExplorerFavorites', JSON.stringify([...favorites]));
+    }
+
+    // Utility: Save dark mode preference
+    function saveDarkMode(isLight) {
+      localStorage.setItem('spaceExplorerDarkMode', isLight ? 'true' : 'false');
+    }
+
+    // Filter and display buttons for current category
+    function updateButtons() {
+      const objects = data[currentCategory];
+      const query = searchInput.value.trim().toLowerCase();
+
+      filteredObjects = objects.filter(obj => obj.name.toLowerCase().includes(query));
+      selectedIndex = -1;
+
+      buttonsContainer.innerHTML = '';
+
+      if(filteredObjects.length === 0) {
+        buttonsContainer.innerHTML = '<p style="color:#bbb;">No objects found.</p>';
+        hideObjectInfo();
+        hide3DView();
+        return;
+      }
+
+      filteredObjects.forEach((obj, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'objectBtn';
+        btn.setAttribute('role', 'listitem');
+        btn.setAttribute('tabindex', '0');
+        btn.textContent = obj.name;
+        btn.title = obj.description;
+        btn.dataset.index = idx;
+
+        // Mark favorites
+        if (favorites.has(obj.name)) {
+          btn.classList.add('favorited');
+          btn.innerHTML = obj.name + ' <span class="star" aria-label="Favorited">★</span>';
+        }
+
+        btn.addEventListener('click', () => {
+          selectObject(idx);
+        });
+
+        btn.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectObject(idx);
+          }
+        });
+
+        buttonsContainer.appendChild(btn);
+      });
+
+      // Select first object by default if any
+      selectObject(0);
+    }
+
+    // Show or hide the object details panel
+    function showObjectInfo(obj, idx) {
+      objectName.textContent = obj.name;
+      objectName.focus();
+
+      objectDesc.textContent = obj.description;
+      objectImage.src = obj.image;
+      objectImage.alt = `Image of ${obj.name}`;
+      objectInfo.classList.add('visible');
+      objectIndex.textContent = `${idx + 1} of ${filteredObjects.length}`;
+
+      // Show 3D for planets only, else hide
+      if (currentCategory === 'planets') {
+        show3DView(obj);
+      } else {
+        hide3DView();
+      }
+    }
+    function hideObjectInfo() {
+      objectInfo.classList.remove('visible');
+      hide3DView();
+    }
+
+    // Copy object name to clipboard
+    copyNameBtn.addEventListener('click', () => {
+      if(selectedIndex < 0) return;
+      const name = filteredObjects[selectedIndex].name;
+      navigator.clipboard.writeText(name).then(() => {
+        copyNameBtn.textContent = 'Copied!';
+        setTimeout(() => copyNameBtn.textContent = 'Copy Name', 1500);
+      });
+    });
+
+    // Close details panel
+    closeInfoBtn.addEventListener('click', () => {
+      hideObjectInfo();
+      // Focus back to the selected button
+      if(selectedIndex >= 0) {
+        const btns = buttonsContainer.querySelectorAll('.objectBtn');
+        if(btns[selectedIndex]) btns[selectedIndex].focus();
+      }
+    });
+
+    // Select an object by index
+    function selectObject(idx) {
+      if (idx < 0 || idx >= filteredObjects.length) return;
+
+      selectedIndex = idx;
+      const obj = filteredObjects[idx];
+
+      // Update buttons highlight
+      buttonsContainer.querySelectorAll('.objectBtn').forEach((btn, i) => {
+        if (i === idx) btn.classList.add('selected');
+        else btn.classList.remove('selected');
+      });
+
+      showObjectInfo(obj, idx);
+    }
+
+    // Search input event
+    searchInput.addEventListener('input', () => {
+      updateButtons();
+    });
+
+    // Category change event
+    categorySelect.addEventListener('change', () => {
+      currentCategory = categorySelect.value;
+      searchInput.value = '';
+      updateButtons();
+    });
+
+    // Dark mode toggle
+    toggleDarkModeBtn.addEventListener('click', () => {
+      const isLight = document.body.classList.toggle('light');
+      toggleDarkModeBtn.textContent = isLight ? 'Light Mode' : 'Dark Mode';
+      toggleDarkModeBtn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+      saveDarkMode(isLight);
+    });
+
+    // Favorite toggling on object buttons by right-click or long-press (optional)
+    buttonsContainer.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const btn = e.target.closest('button.objectBtn');
+      if (!btn) return;
+      const idx = Number(btn.dataset.index);
+      if (idx < 0 || idx >= filteredObjects.length) return;
+
+      const obj = filteredObjects[idx];
+      if (favorites.has(obj.name)) {
+        favorites.delete(obj.name);
+        btn.classList.remove('favorited');
+        btn.innerHTML = obj.name;
+      } else {
+        favorites.add(obj.name);
+        btn.classList.add('favorited');
+        btn.innerHTML = obj.name + ' <span class="star" aria-label="Favorited">★</span>';
+      }
+      saveFavorites();
+    });
+
+    // Keyboard navigation: arrow keys to move selection
+    document.addEventListener('keydown', e => {
+      if (document.activeElement === searchInput) return; // skip if typing search
+      if (filteredObjects.length === 0) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        let newIndex = (selectedIndex + 1) % filteredObjects.length;
+        selectObject(newIndex);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        let newIndex = (selectedIndex - 1 + filteredObjects.length) % filteredObjects.length;
+        selectObject(newIndex);
+      }
+    });
+
+    // Image zoom modal
+    objectImage.addEventListener('click', () => {
+      if (!objectImage.src) return;
+      imageModalImg.src = objectImage.src;
+      imageModalImg.alt = objectImage.alt;
+      imageModal.style.display = 'flex';
+      imageModal.focus();
+    });
+    imageModal.addEventListener('click', () => {
+      imageModal.style.display = 'none';
+      imageModalImg.src = '';
+    });
+    imageModal.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        imageModal.style.display = 'none';
+        imageModalImg.src = '';
+      }
+    });
+
+    // 3D visualization for planets
+    let scene, camera, renderer, controls, sphere, animationId;
+
+    function initThreeJS() {
+      if (scene) {
+        // Already initialized
+        return;
+      }
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, threeContainer.clientWidth / threeContainer.clientHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+      threeContainer.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.1;
+      controls.minDistance = 1.5;
+      controls.maxDistance = 5;
+      controls.enablePan = false;
+
+      camera.position.set(0, 0, 3);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      directionalLight.position.set(5, 3, 5);
+      scene.add(directionalLight);
+
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function createPlanetTexture(url) {
+      const loader = new THREE.TextureLoader();
+      return loader.load(url);
+    }
+
+    function show3DView(planet) {
+      threeContainer.style.display = 'block';
+      initThreeJS();
+
+      // Remove old sphere if any
+      if (sphere) {
+        scene.remove(sphere);
+        sphere.geometry.dispose();
+        sphere.material.dispose();
+        sphere = null;
+      }
+
+      const geometry = new THREE.SphereGeometry(1, 64, 64);
+      const texture = createPlanetTexture(planet.image);
+
+      const material = new THREE.MeshPhongMaterial({ map: texture });
+      sphere = new THREE.Mesh(geometry, material);
+      scene.add(sphere);
+
+      animate();
+      threeContainer.setAttribute('aria-label', `3D view of planet ${planet.name}`);
+    }
+    function hide3DView() {
+      threeContainer.style.display = 'none';
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    }
+    function animate() {
+      animationId = requestAnimationFrame(animate);
+      if (sphere) {
+        sphere.rotation.y += 0.005;
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    function onWindowResize() {
+      if (!renderer) return;
+      camera.aspect = threeContainer.clientWidth / threeContainer.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+    }
+
+    // Initialization
+    updateButtons();
+
+  })();
+</script>
+</body>
+</html>

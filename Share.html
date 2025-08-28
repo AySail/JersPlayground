@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🚀 Share the Fun!</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #f0f0f0;
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+  p {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    max-width: 600px;
+  }
+  button, a.share-link {
+    background: #1e90ff;
+    border: none;
+    border-radius: 10px;
+    padding: 15px 25px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    user-select: none;
+    box-shadow: 0 5px #0d5fb8;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+  }
+  button:hover, a.share-link:hover {
+    background: #0a64b8;
+    transform: translateY(-2px);
+  }
+  button:active, a.share-link:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px #0d5fb8;
+  }
+  .cosmic {
+    background: #6a0dad;
+    box-shadow: 0 5px #4a067d;
+  }
+  .cosmic:hover {
+    background: #520a8a;
+  }
+  #copyMsg {
+    margin-top: 20px;
+    font-style: italic;
+    color: #90ee90;
+  }
+</style>
+</head>
+<body>
+
+  <h1>🚀 Share the Fun!</h1>
+  <p>Spread the word — share this playground however you like!</p>
+
+  <div class="buttons">
+    <!-- Normal share -->
+    <button id="copyLinkBtn" title="Copy page URL">📋 Copy Link</button>
+    <a class="share-link" href="https://twitter.com/intent/tweet?text=Check%20out%20Jers%20Playground!&url=https://yourdomain.com" target="_blank" rel="noopener noreferrer">🐦 Tweet It</a>
+    <a class="share-link" href="https://www.facebook.com/sharer/sharer.php?u=https://yourdomain.com" target="_blank" rel="noopener noreferrer">📘 Share on Facebook</a>
+    <a class="share-link" href="mailto:?subject=Check%20out%20Jers%20Playground&body=Check%20out%20this awesome playground! https://yourdomain.com">✉️ Email a Friend</a>
+
+    <!-- Cosmic fun share -->
+    <button class="cosmic" id="alienBtn">👽 Talk to Aliens</button>
+    <button class="cosmic" id="universeBtn">🌌 Share with Universe</button>
+    <button class="cosmic" id="pigeonBtn">🕊️ Carrier Pigeon</button>
+    <button class="cosmic" id="telepathyBtn">🧠 Telepathic Share</button>
+  </div>
+
+  <div id="copyMsg"></div>
+
+  <script>
+    const copyBtn = document.getElementById('copyLinkBtn');
+    const copyMsg = document.getElementById('copyMsg');
+
+    copyBtn.addEventListener('click', () => {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        copyMsg.textContent = '✅ Link copied to clipboard!';
+        setTimeout(() => copyMsg.textContent = '', 3000);
+      }).catch(() => {
+        copyMsg.textContent = '❌ Failed to copy. Please copy manually.';
+      });
+    });
+
+    // Cosmic share button handlers with silly alerts and animations
+    function cosmicAlert(msg) {
+      alert(msg);
+    }
+
+    document.getElementById('alienBtn').addEventListener('click', () => {
+      cosmicAlert('👽 Establishing cosmic connection... Beep boop! Aliens love your playground! 👾');
+    });
+
+    document.getElementById('universeBtn').addEventListener('click', () => {
+      cosmicAlert('🌌 Sending your playground out to the far reaches of the universe... 🛸');
+    });
+
+    document.getElementById('pigeonBtn').addEventListener('click', () => {
+      cosmicAlert('🕊️ Carrier pigeon dispatched! Hope it avoids space pirates and stormy skies!');
+    });
+
+    document.getElementById('telepathyBtn').addEventListener('click', () => {
+      cosmicAlert('🧠 Your playful vibes are traveling telepathically across dimensions!');
+    });
+  </script>
+
+</body>
+</html>

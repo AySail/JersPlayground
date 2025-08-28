@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎵 Music Maker Enhanced</title>
+  <style>
+    /* Base styling */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #222;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      user-select: none;
+      min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Dark mode styling */
+    body.light {
+      background: #fefefe;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    /* Container for keys grid */
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(12, 60px);
+      gap: 10px;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+
+    /* Individual piano key styling */
+    button.key {
+      background: #444;
+      border: none;
+      border-radius: 8px;
+      height: 60px;
+      font-size: 1.2rem;
+      color: #eee;
+      cursor: pointer;
+      box-shadow: 0 5px #222;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+    }
+    body.light button.key {
+      background: #ddd;
+      color: #222;
+      box-shadow: 0 5px #aaa;
+    }
+
+    /* Pressed state styling */
+    button.key:active, button.key.playing {
+      background: #ff4081;
+      box-shadow: 0 3px #aa2e61;
+      transform: translateY(2px);
+      color: white;
+    }
+    body.light button.key.playing {
+      background: #e040fb;
+      box-shadow: 0 3px #9c27b0;
+      color: white;
+    }
+
+    /* Smaller note label */
+    small {
+      font-size: 0.7rem;
+      opacity: 0.7;
+    }
+
+    /* Controls container */
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Volume slider styling */
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 1rem;
+    }
+    input[type="range"] {
+      cursor: pointer;
+    }
+
+    /* Toggle buttons styling */
+    button.control-btn {
+      background: #555;
+      color: #eee;
+      border-radius: 8px;
+      padding: 8px 15px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px #333;
+      transition: background-color 0.2s ease;
+    }
+    button.control-btn:hover {
+      background: #ff4081;
+      color: white;
+    }
+    button.control-btn.active {
+      background: #ff4081;
+      box-shadow: 0 2px #aa2e61;
+      transform: translateY(2px);
+      color: white;
+    }
+    body.light button.control-btn {
+      background: #ccc;
+      color: #222;
+      box-shadow: 0 4px #999;
+    }
+    body.light button.control-btn.active {
+      background: #e040fb;
+      box-shadow: 0 2px #9c27b0;
+      color: white;
+    }
+
+    /* Instruction styling */
+    .instructions {
+      margin-top: 10px;
+      font-size: 1rem;
+      color: #bbb;
+      max-width: 600px;
+      text-align: center;
+    }
+    body.light .instructions {
+      color: #444;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 700px) {
+      .keys {
+        grid-template-columns: repeat(7, 50px);
+        gap: 8px;
+      }
+      button.key {
+        height: 50px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎵 Music Maker Enhanced</h1>
+
+  <!-- Controls for volume, octave shift, sustain toggle, and dark mode -->
+  <div class="controls">
+    <label for="volume">Volume:
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5" />
+    </label>
+
+    <button id="octave-down" class="control-btn" title="Lower Octave">Octave -</button>
+    <button id="octave-up" class="control-btn" title="Raise Octave">Octave +</button>
+
+    <button id="sustain-toggle" class="control-btn" title="Toggle Sustain">Sustain: Off</button>
+    <button id="darkmode-toggle" class="control-btn" title="Toggle Dark Mode">Light Mode</button>
+  </div>
+
+  <!-- Piano keys container -->
+  <div class="keys" id="piano-keys">
+    <!-- Dynamically generated keys in script -->
+  </div>
+
+  <p class="instructions" id="instructions">
+    Click the buttons or press keys A S D F G H J (and more) to play sounds.<br/>
+    Use the controls above to change volume, octave, toggle sustain, and switch theme.
+  </p>
+
+  <script>
+    // --- Setup variables and constants ---
+
+    // Notes mapping: keyCode => { noteName, baseFrequency }
+    // Frequencies based on equal temperament for 4th octave (Middle C = C4)
+    const notesMap = [
+      { keyCode: 65, key: 'A', note: 'C', freq: 261.63 },  // C4
+      { keyCode: 87, key: 'W', note: 'C#', freq: 277.18 }, // C#4
+      { keyCode: 83, key: 'S', note: 'D', freq: 293.66 },
+      { keyCode: 69, key: 'E', note: 'D#', freq: 311.13 },
+      { keyCode: 68, key: 'D', note: 'E', freq: 329.63 },
+      { keyCode: 70, key: 'F', note: 'F', freq: 349.23 },
+      { keyCode: 84, key: 'T', note: 'F#', freq: 369.99 },
+      { keyCode: 71, key: 'G', note: 'G', freq: 392.00 },
+      { keyCode: 89, key: 'Y', note: 'G#', freq: 415.30 },
+      { keyCode: 72, key: 'H', note: 'A', freq: 440.00 },
+      { keyCode: 85, key: 'U', note: 'A#', freq: 466.16 },
+      { keyCode: 74, key: 'J', note: 'B', freq: 493.88 }
+    ];
+
+    // Octave modifier (0 = base octave 4)
+    let currentOctave = 4;
+
+    // Volume (0 to 1)
+    let volume = 0.5;
+
+    // Sustain mode flag (whether notes play sustained or short)
+    let sustain = false;
+
+    // Whether dark mode is enabled
+    let darkMode = false;
+
+    // Web Audio API context
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // To keep track of active oscillators when sustain is on
+    const activeOscillators = {};
+
+    // Container for piano keys
+    const pianoKeysContainer = document.getElementById('piano-keys');
+
+    // --- Functions ---
+
+    /**
+     * Create a piano key button element for given note info
+     */
+    function createKey(noteInfo) {
+      const button = document.createElement('button');
+      button.classList.add('key');
+      button.setAttribute('data-keycode', noteInfo.keyCode);
+      button.setAttribute('data-note', noteInfo.note);
+      button.textContent = noteInfo.key;
+      // Show note name below the key letter
+      const small = document.createElement('small');
+      small.textContent = noteInfo.note;
+      button.appendChild(document.createElement('br'));
+      button.appendChild(small);
+
+      // Add click event to play note on mouse click
+      button.addEventListener('mousedown', () => playNote(noteInfo.keyCode));
+      // If sustain is off, stop note on mouseup / mouseleave
+      if (!sustain) {
+        button.addEventListener('mouseup', () => stopNote(noteInfo.keyCode));
+        button.addEventListener('mouseleave', () => stopNote(noteInfo.keyCode));
+      }
+      return button;
+    }
+
+    /**
+     * Calculate frequency for a given note and octave
+     */
+    function getFrequency(baseFreq, octave) {
+      // Frequency doubles with each octave
+      return baseFreq * Math.pow(2, octave - 4);
+    }
+
+    /**
+     * Play note sound for given keyCode
+     */
+    function playNote(keyCode) {
+      // Find note info
+      const noteInfo = notesMap.find(n => n.keyCode === Number(keyCode));
+      if (!noteInfo) return;
+
+      // Calculate frequency based on current octave
+      const freq = getFrequency(noteInfo.freq, currentOctave);
+
+      // Highlight key on UI
+      highlightKey(keyCode, true);
+
+      // Create oscillator for sound generation
+      if (sustain) {
+        // If sustain is on, keep oscillator playing until stopped
+        if (activeOscillators[keyCode]) return; // Already playing
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine'; // can be changed to 'square', 'triangle', etc.
+        gainNode.gain.value = volume;
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+
+        activeOscillators[keyCode] = { oscillator, gainNode };
+      } else {
+        // Short note (play and fade out)
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        gainNode.gain.value = volume;
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+
+        // Fade out quickly
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        oscillator.stop(audioCtx.currentTime + 0.5);
+
+        // Cleanup highlight after note ends
+        setTimeout(() => highlightKey(keyCode, false), 500);
+      }
+    }
+
+    /**
+     * Stop playing note when sustain is on
+     */
+    function stopNote(keyCode) {
+      if (!sustain) return;
+
+      const active = activeOscillators[keyCode];
+      if (!active) return;
+
+      // Fade out gain smoothly
+      active.gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      active.oscillator.stop(audioCtx.currentTime + 0.3);
+
+      delete activeOscillators[keyCode];
+
+      // Remove highlight
+      highlightKey(keyCode, false);
+    }
+
+    /**
+     * Highlight or un-highlight key button
+     */
+    function highlightKey(keyCode, on) {
+      const keyBtn = document.querySelector(`button[data-keycode="${keyCode}"]`);
+      if (!keyBtn) return;
+      if (on) {
+        keyBtn.classList.add('playing');
+      } else {
+        keyBtn.classList.remove('playing');
+      }
+    }
+
+    /**
+     * Update volume based on slider
+     */
+    function updateVolume(newVolume) {
+      volume = newVolume;
+    }
+
+    /**
+     * Change octave up or down
+     */
+    function changeOctave(delta) {
+      let newOctave = currentOctave + delta;
+      if (newOctave < 1) newOctave = 1;  // Minimum octave limit
+      if (newOctave > 7) newOctave = 7;  // Maximum octave limit
+      currentOctave = newOctave;
+      updateInstructions();
+    }
+
+    /**
+     * Toggle sustain mode
+     */
+    function toggleSustain() {
+      sustain = !sustain;
+      // Stop all sustained notes if turning sustain off
+      if (!sustain) {
+        for (const keyCode in activeOscillators) {
+          stopNote(keyCode);
+        }
+      }
+      document.getElementById('sustain-toggle').textContent = `Sustain: ${sustain ? 'On' : 'Off'}`;
+    }
+
+    /**
+     * Toggle dark/light mode
+     */
+    function toggleDarkMode() {
+      darkMode = !darkMode;
+      if (darkMode) {
+        document.body.classList.remove('light');
+        document.getElementById('darkmode-toggle').textContent = 'Light Mode';
+      } else {
+        document.body.classList.add('light');
+        document.getElementById('darkmode-toggle').textContent = 'Dark Mode';
+      }
+    }
+
+    /**
+     * Update instructions text with current octave info
+     */
+    function updateInstructions() {
+      const instructions = document.getElementById('instructions');
+      instructions.innerHTML = `
+        Click the buttons or press keys A S D F G H J (and others) to play sounds.<br/>
+        Current octave: ${currentOctave}. Use Octave + / - buttons to change.<br/>
+        Use the controls above to change volume, toggle sustain, and switch theme.
+      `;
+    }
+
+    /**
+     * Handle physical keyboard key down event
+     */
+    function handleKeyDown(e) {
+      // Resume AudioContext on first interaction (some browsers require this)
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      playNote(e.keyCode);
+    }
+
+    /**
+     * Handle physical keyboard key up event (for sustain off)
+     */
+    function handleKeyUp(e) {
+      if (!sustain) return;
+      stopNote(e.keyCode);
+    }
+
+    // --- Initialization ---
+
+    // Create all piano keys buttons
+    notesMap.forEach(note => {
+      pianoKeysContainer.appendChild(createKey(note));
+    });
+
+    // Event listeners for controls
+    document.getElementById('volume').addEventListener('input', (e) => {
+      updateVolume(e.target.value);
+    });
+
+    document.getElementById('octave-up').addEventListener('click', () => {
+      changeOctave(1);
+    });
+    document.getElementById('octave-down').addEventListener('click', () => {
+      changeOctave(-1);
+    });
+
+    document.getElementById('sustain-toggle').addEventListener('click', () => {
+      toggleSustain();
+    });
+
+    document.getElementById('darkmode-toggle').addEventListener('click', () => {
+      toggleDarkMode();
+    });
+
+    // Keyboard event listeners
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Initialize instructions
+    updateInstructions();
+  </script>
+</body>
+</html>

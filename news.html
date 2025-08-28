@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jer's Playground - News</title>
+  <style>
+    /* Reset and basic styles */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: white;
+      color: #222;
+      padding: 20px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      color: #333;
+    }
+    header p {
+      margin-top: 5px;
+      font-style: italic;
+      color: #666;
+    }
+    .news-item {
+      border-bottom: 1px solid #ddd;
+      padding: 15px 0;
+    }
+    .news-item:last-child {
+      border: none;
+    }
+    .news-title {
+      font-size: 1.3rem;
+      margin: 0 0 8px 0;
+      color: #0077cc;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .news-date {
+      font-size: 0.85rem;
+      color: #999;
+      margin-bottom: 10px;
+    }
+    .news-content {
+      display: none;
+      font-size: 1rem;
+      line-height: 1.4;
+      color: #444;
+    }
+    /* Show content when active */
+    .news-item.active .news-content {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Jer's Playground</h1>
+    <p>Latest News</p>
+  </header>
+
+  <main id="news-list">
+    <!-- News items will be inserted here by JS -->
+  </main>
+
+  <script>
+    // ✅ Fixed and clean news data
+    const newsData = [
+      {
+        title: "Website launch",
+        date: "2025-08-5",
+        content: "Im launching my website with fun things on it, this is my 1st real website! hope bring fun things"
+      },
+      {
+        title: "How to mod our games!",
+        date: "2025-08-5",
+        content: "our games are made for modding you can use dev tools to go and paste in scripts to mod the game lot our games have docs for modding in its code or in game!"
+      }
+    ];
+
+    const newsList = document.getElementById('news-list');
+
+    function createNewsItem(news) {
+      const item = document.createElement('div');
+      item.className = 'news-item';
+
+      const title = document.createElement('h2');
+      title.className = 'news-title';
+      title.textContent = news.title;
+      title.addEventListener('click', () => {
+        item.classList.toggle('active');
+      });
+
+      const date = document.createElement('div');
+      date.className = 'news-date';
+      const formattedDate = new Date(news.date).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+      date.textContent = formattedDate;
+
+      const content = document.createElement('p');
+      content.className = 'news-content';
+      content.textContent = news.content;
+
+      item.appendChild(title);
+      item.appendChild(date);
+      item.appendChild(content);
+
+      return item;
+    }
+
+    newsData.forEach(news => {
+      newsList.appendChild(createNewsItem(news));
+    });
+  </script>
+</body>
+</html>
